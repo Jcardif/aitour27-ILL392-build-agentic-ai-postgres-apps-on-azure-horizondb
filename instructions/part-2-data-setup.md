@@ -6,7 +6,7 @@ You will load a sample of Washington State court cases into Azure HorizonDB. The
 
 ### Open Notebook 1
 
-Complete Part 1 first and confirm that your database connection works. The code, Python packages, `.env` settings, and dataset are already prepared in `C:\Lab392`.
+Complete Part 1 first and confirm that your database connection works. The code, Python packages, `.env` settings, and dataset are already prepared in `C:\Lab`.
 
 1. In VS Code, select **Explorer** on the left.
 
@@ -63,7 +63,7 @@ This step gives the database two short names for the Azure OpenAI models. The mo
 
 ## 2.6 Load the court cases
 
-The dataset is at `C:\Lab392\Dataset\cases.csv`. This step loads it into searchable tables.
+The dataset is at `C:\Lab\Dataset\cases.csv`. This step loads it into searchable tables.
 
 The `cases` table holds the case names, dates, courts, and opinion text used by the assistant. The `temp_cases` table keeps the raw records, including the citations used to build the graph later.
 

@@ -15,7 +15,7 @@ You will add tools one at a time, then try the assistant in a chat app.
 
 Complete [Part 2](part-2-data-setup.md) first.
 
-1. In VS Code Explorer, expand the `Code` folder in `C:\Lab392`.
+1. In VS Code Explorer, expand the `Code` folder in `C:\Lab`.
 2. Open `2-app-development.ipynb` and keep this page alongside it.
 
     ![Notebook 2 in the Code folder](media/notebook-2-app-development.png)
