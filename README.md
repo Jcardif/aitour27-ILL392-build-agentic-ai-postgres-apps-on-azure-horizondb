@@ -28,7 +28,7 @@ If you're learning at your own pace at home:
 
 1. Clone this repository
 2. Set up your environment by following the steps in [the self deployment guide](setup/SETUP.md)
-3. Follow the [self-paced database connection guide](instructions/on-your-own/part-1-connect-horizondb-to-vscode.md), then use [Part 2](instructions/part-2-data-setup.md) and [Part 3](instructions/part-3-agentic-app-development.md) alongside the two required notebooks in [`src/`](/src/). The [third notebook's diagnostics exercise](instructions/optional-diagnostics.md) is optional.
+3. Follow the session guidance in [`instructions/`](instructions/README.md), then work through the 2 notebooks in the [`src/`](/src/) folder sequentially.
 
 ### 🎯 Learning outcomes
 

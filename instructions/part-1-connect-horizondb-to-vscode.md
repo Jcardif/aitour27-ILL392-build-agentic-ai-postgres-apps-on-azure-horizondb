@@ -94,4 +94,4 @@ In this part, we will connect to your Azure HorizonDB database using the VS Code
 
 ## Next Step
 
-> Continue to [Part 2 - Prepare the data for your AI assistant](part-2-data-setup.md). Keep that instruction page open while you run Notebook 1 in VS Code.
+> Select **Next >** to continue to [Part 2 - Prepare the data for your AI assistant](part-2-data-setup.md).

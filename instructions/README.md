@@ -24,27 +24,9 @@
 
 ## Overview
 
-In this lab, you will build Counsel AI, a legal research assistant that helps investigate a sample property-flooding dispute in Seattle. It uses Washington State court cases stored in Azure HorizonDB, a PostgreSQL database.
+You will build Counsel AI, a legal research assistant for a sample property-flooding dispute in Seattle. It searches Washington State court cases in Azure HorizonDB, checks historical rainfall, and remembers facts from the conversation.
 
-You will see how the assistant finds evidence by keyword, by meaning, and through citations between cases. It will extract facts from opinion text, request historical rainfall data from an external service, and remember selected facts from a conversation.
-
-The lab retains its advanced technical exercises, but the instructions explain each capability before you use it. You do not need to write Python for the notebook exercises. Run the prepared code cells, check the results, and consider what the capability would mean for a business application.
-
-Keep these instruction pages open alongside the notebooks. All explanations and tasks are here, so the notebooks can contain only code. Cell references count code cells only and remain valid when notebook markdown is removed.
-
-## What you will build
-
-| What you will build | What you will observe |
-|---|---|
-| A searchable case dataset | Different search methods find different evidence. |
-| A tool-using AI assistant | The model calls prepared tools before drafting an answer. |
-| A citation graph | Links between cases add related decisions to the research. |
-| Structured case analysis | The AI extracts rulings, issues, statutes, and case outcomes from excerpts. |
-| An external weather lookup | The assistant combines database evidence with historical rainfall records. |
-| Stored conversation memory | Follow-up questions reuse facts without repeating the intake details. |
-| A browser chat app | Tool calls and memory updates appear beside the conversation. |
-
-The cases, search indexes, citation graph, and memories share one HorizonDB database. Azure OpenAI provides model processing, and Open-Meteo provides the weather records. The generated legal analysis is a lab example and needs human review.
+The notebooks contain the prepared code. Follow the steps on these pages, run the indicated cells, and check each result before continuing.
 
 ## Next steps
 
