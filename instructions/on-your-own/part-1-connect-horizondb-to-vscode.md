@@ -92,4 +92,4 @@ In this part, we will connect to your Azure HorizonDB database using the VS Code
 
 ## Next Step
 
-> Proceed to [Part 2 - Programmatically interact with your Azure HorizonDB database using Python](/instructions/on-your-own/part-2-3-data-setup-agentic-development.md) to continue with the lab.
+> Continue to [Part 2 - Prepare the data for your AI assistant](../part-2-data-setup.md). The shared guide includes the notebook and dataset locations for your own computer.

@@ -1,4 +1,4 @@
-# Get Started
+# Get started
 
 > [!NOTE]
 > As you follow the instructions in this pane, whenever you see a `icon`, you can use it to copy text from the instruction pane into the virtual machine interface. This is particularly useful to copy code; but bear in mind you may need to modify the pasted code to fix indent levels or formatting before running it!
@@ -18,26 +18,34 @@
     1. [Open VS Code and set up database connection to Azure PostgreSQL](/instructions/part-1-connect-horizondb-to-vscode.md#open-vs-code-and-set-up-database-connection-to-azure-postgresql)
     2. [Create Connection](/instructions/part-1-connect-horizondb-to-vscode.md#create-connection-to-horizondb)
     3. [Explore VS Code Extension for PostgreSQL Dashboard](/instructions/part-1-connect-horizondb-to-vscode.md#explore-vs-code-extension-for-postgresql-dashboard)
-3. [Part 2 and 3 - Data Setup and Agentic App Development](/instructions/part-2-3-data-setup-agentic-development.md)
+3. [Part 2 - Prepare the data for your AI assistant](part-2-data-setup.md), using `1-data-setup.ipynb`.
+4. [Part 3 - Build and try the AI assistant](part-3-agentic-app-development.md), using `2-app-development.ipynb`.
+5. [Optional - Check the database server configuration](optional-diagnostics.md), using `3-diagnostics.ipynb`.
 
 ## Overview
 
-In this lab, you will build an **agentic Compliance Advisor application** end to end, powered by a single **Azure HorizonDB** (Postgres) instance acting as your relational store, full-text search engine, vector database, graph database, **and** long-term memory store for the agent.
+In this lab, you will build Counsel AI, a legal research assistant that helps investigate a sample property-flooding dispute in Seattle. It uses Washington State court cases stored in Azure HorizonDB, a PostgreSQL database.
 
-You will load a real U.S. case-law dataset, light up the AI extensions inside HorizonDB, and then assemble a Microsoft Agent Framework agent that combines **BM25 keyword search**, **vector similarity (DiskANN)**, **citation-graph traversal (Apache AGE)**, **in-database entity extraction (`azure_ai`)**, and an **external weather API** to write a real legal brief, with persistent memory across turns.
+You will see how the assistant finds evidence by keyword, by meaning, and through citations between cases. It will extract facts from opinion text, request historical rainfall data from an external service, and remember selected facts from a conversation.
 
-The lab is intentionally hands-on: every concept is paired with a runnable notebook cell, a Technical Background Notes block explaining what is happening underneath, and a short Tasks list telling you what to look at in the output.
+The lab retains its advanced technical exercises, but the instructions explain each capability before you use it. You do not need to write Python for the notebook exercises. Run the prepared code cells, check the results, and consider what the capability would mean for a business application.
+
+Keep these instruction pages open alongside the notebooks. All explanations and tasks are here, so the notebooks can contain only code. Cell references count code cells only and remain valid when notebook markdown is removed.
 
 ## What you will build
 
-- A **Microsoft Agent Framework** agent that can reason over U.S. case law stored in Azure HorizonDB.
-- **Hybrid retrieval**: BM25 full-text search (`pg_textsearch`) combined with vector similarity search (`pgvector` + `pg_diskann` for ANN with advanced filtering).
-- **GraphRAG** over a citation graph built with **Apache AGE**, letting the agent expand from anchor cases to surrounding precedents in a single Cypher-style traversal.
-- **In-database entity extraction** with the `azure_ai` extension, so structured fields (`holding`, `issues`, `statutes_cited`, `disposition`) are pulled directly inside Postgres instead of round-tripping opinions back to the application.
-- **External evidence ingestion** through a tool that calls the Open-Meteo weather archive API.
-- **Long-term memory** with **Mem0**, where memory embeddings are stored back in the same HorizonDB instance using `pgvector`. No separate vector database.
-- A **Gradio chat UI** that surfaces a live Tool Trace panel and the agent's growing memory store next to the conversation.
+| What you will build | What you will observe |
+|---|---|
+| A searchable case dataset | Different search methods find different evidence. |
+| A tool-using AI assistant | The model calls prepared tools before drafting an answer. |
+| A citation graph | Links between cases add related decisions to the research. |
+| Structured case analysis | The AI extracts rulings, issues, statutes, and case outcomes from excerpts. |
+| An external weather lookup | The assistant combines database evidence with historical rainfall records. |
+| Stored conversation memory | Follow-up questions reuse facts without repeating the intake details. |
+| A browser chat app | Tool calls and memory updates appear beside the conversation. |
 
-## Next Steps
+The cases, search indexes, citation graph, and memories share one HorizonDB database. Azure OpenAI provides model processing, and Open-Meteo provides the weather records. The generated legal analysis is a lab example and needs human review.
 
-> Start with Part 0 to sign in to Azure and set up your Azure resources.
+## Next steps
+
+> Start with [Part 0](part-0-setup-azure-resources.md) to sign in to Azure and set up your lab resources.
