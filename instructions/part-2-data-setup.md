@@ -4,10 +4,6 @@
 
 You will load a sample of Washington State court cases into Azure HorizonDB. The assistant will search these cases by keyword, by meaning, and through citations between cases.
 
-### Open Notebook 1
-
-Complete Part 1 first and confirm that your database connection works. The code, Python packages, `.env` settings, and dataset are already prepared in `C:\Lab`.
-
 1. In VS Code, select **Explorer** on the left.
 
     ![VS Code Explorer icon](media/files-icon.png)
