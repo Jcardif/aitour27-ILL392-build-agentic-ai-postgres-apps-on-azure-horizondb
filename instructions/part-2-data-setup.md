@@ -59,7 +59,7 @@ This step gives the database two short names for the Azure OpenAI models. The mo
 
 ## 2.6 Load the court cases
 
-The dataset is at `C:\Lab392\Dataset\cases.csv`. This step loads it into searchable tables.
+The dataset is at `C:\Lab\Dataset\cases.csv`. This step loads it into searchable tables.
 
 The `cases` table holds the case names, dates, courts, and opinion text used by the assistant. The `temp_cases` table keeps the raw records, including the citations used to build the graph later.
 
