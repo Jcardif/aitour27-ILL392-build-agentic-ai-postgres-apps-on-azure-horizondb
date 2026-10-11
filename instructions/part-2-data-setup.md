@@ -2,7 +2,9 @@
 
 ## 2.1 Prepare the case data
 
-You will load a sample of Washington State court cases into Azure HorizonDB. The assistant will search these cases by keyword, by meaning, and through citations between cases.
+Notebook 1 builds the HorizonDB knowledge layer for the Compliance Advisor Agent. You will load Washington State court cases and prepare BM25 full-text search, vector search, and graph queries.
+
+These capabilities support two business questions from the Caldova scenario: have we encountered something similar, and what evidence supports the conclusion? Relational rows hold the case facts, vectors find similar issues, and the citation graph connects related decisions.
 
 1. In VS Code, select **Explorer** on the left.
 
@@ -22,7 +24,7 @@ Follow the sections below in order; each run step moves to the next code cell. I
 
 ## 2.2 Load the Python libraries
 
-The libraries connect the notebook to HorizonDB and Azure OpenAI.
+`psycopg` connects Python to PostgreSQL. The Azure OpenAI client generates embeddings, and `dotenv` loads the prepared configuration without putting credentials in the code.
 
 1. Run **the first code cell**.
 2. When VS Code asks for an environment, select **Python Environments** > **Python 3.13.9**, not **Python 3.14.7**. If a different kernel is already selected, click its name at the top right to change it.
@@ -32,16 +34,16 @@ The libraries connect the notebook to HorizonDB and Azure OpenAI.
 
 ## 2.3 Read the connection settings
 
-The notebook reads the prepared `.env` file. The chat model will write answers, and the embedding model will prepare text for meaning-based search.
+The notebook reads the prepared `.env` file. It contains the HorizonDB connection settings and two Azure OpenAI deployments: a chat model for generation and extraction, and an embedding model for vector search.
 
 1. Run **the next code cell**.
 2. Check that three values print: the chat deployment name, embedding deployment name, and API version.
 
     If you see `KeyError`, a required setting is missing. Ask your facilitator for help and keep keys and passwords out of shared error messages.
 
-## 2.4 Enable the database capabilities
+## 2.4 Enable the HorizonDB extensions
 
-PostgreSQL extensions add the search, graph, and AI capabilities used in this lab.
+PostgreSQL extensions provide the advisor's retrieval and AI capabilities. `vector` and `pg_diskann` support vector search, `pg_textsearch` provides BM25 full-text search, `age` provides Apache AGE graph queries, and `azure_ai` provides AI functions callable from SQL.
 
 1. Run **the next code cell**.
 2. Check for five extension-ready messages followed by `Done. Extensions Created.`
@@ -50,7 +52,7 @@ PostgreSQL extensions add the search, graph, and AI capabilities used in this la
 
 ## 2.5 Register the AI models
 
-This step gives the database two short names for the Azure OpenAI models. The model registry stores each model's endpoint and connection details so SQL calls can use an alias instead of supplying credentials each time.
+The `azure_ai` model registry connects SQL functions to the prepared Azure OpenAI deployments. Each model has an alias: `lab-chat` for the chat model and `lab-embedding` for the embedding model. The registry stores the endpoint and authentication details.
 
 1. Run **the next code cell**.
 2. Check that `lab-chat` and `lab-embedding` are registered and appear in the verification rows.
@@ -59,9 +61,9 @@ This step gives the database two short names for the Azure OpenAI models. The mo
 
 ## 2.6 Load the court cases
 
-The dataset is at `C:\Lab\Dataset\cases.csv`. This step loads it into searchable tables.
+The dataset is at `C:\Lab\Dataset\cases.csv`. This step loads it into PostgreSQL relational tables.
 
-The `cases` table holds the case names, dates, courts, and opinion text used by the assistant. The `temp_cases` table keeps the raw records, including the citations used to build the graph later.
+The notebook uses `COPY` to load raw JSON records into `temp_cases`, then extracts case names, dates, courts, and opinion text into `cases`. It keeps the raw citations for the graph-building step.
 
 > [!WARNING]
 > This step deletes and recreates the `cases` and `temp_cases` tables. Use only the database created for this lab.
@@ -74,23 +76,25 @@ The `cases` table holds the case names, dates, courts, and opinion text used by 
 
 ## 2.7 Check the loaded cases
 
+The relational data supplies the case IDs and facts that the agent's tools will return. The same IDs connect the search results to graph nodes and extracted facts.
+
 1. Run **the next code cell**.
 2. Check that five case rows print. Find a case name, date, court, and opinion text.
 
-    The data model shows those fields.
+    The diagram shows the relational data model.
 
     ![Sample case data model](media/notebook-1-data-model.png)
 
-## 2.8 Add storage for meaning-based search
+## 2.8 Add the vector column
 
-An embedding is a list of numbers that represents text for similarity comparisons. This step adds a column to store one for each case. Its size matches the prepared embedding model.
+An embedding represents text as a vector so that related text can be compared numerically. This is how the advisor can find a similar issue when the wording differs. The prepared model returns 1,536 values per embedding, so this step adds an `opinions_vector` column of type `vector(1536)`.
 
 1. Run **the next code cell**.
 2. Check for `opinions_vector column added.`
 
-## 2.9 Generate the embeddings
+## 2.9 Generate the opinion embeddings
 
-Azure OpenAI converts case text into embeddings and the notebook saves them in HorizonDB.
+Azure OpenAI generates embeddings from the case text, and the notebook stores them in HorizonDB. These vectors will let the advisor find similar situations even when the question and opinion use different words.
 
 1. Run **the next code cell**.
 2. Watch the progress messages. Wait for 100% and `Done. <N> rows processed.`
@@ -102,11 +106,11 @@ Azure OpenAI converts case text into embeddings and the notebook saves them in H
     > [!NOTE]
     > Rerunning this cell clears existing embeddings and starts again. If it is interrupted, ask your facilitator for help before retrying.
 
-## 2.10 Build the citation graph
+## 2.10 Build the citation graph with Apache AGE
 
-A citation is a reference from one case to another. This step rebuilds the lab's citation graph, with a point for each case and a link for each citation within the dataset.
+Apache AGE stores a property graph in the same PostgreSQL database. Each node represents a case, and each directed `REF` edge records that one case cites another. Graph queries will expand the agent's search from similar cases to related precedents.
 
-Citations to cases outside the sample are not included.
+This step rebuilds `case_graph`. Citations to cases outside the sample are not included.
 
 1. Run **the next code cell**.
 2. Compare `Node count:` with the case count you noted during data loading. They should match.
@@ -114,27 +118,27 @@ Citations to cases outside the sample are not included.
 
     ![Case citation model](media/notebook-1-citation-model.png)
 
-## 2.11 Build and test keyword search
+## 2.11 Build and test the BM25 full-text index
 
-This step prepares keyword search and tries the sample query `water leaking`. It searches the opinion text, not the case names.
+BM25 ranks case opinions against query terms. It helps answer "Is there precedent?" when the relevant legal term or doctrine is known. Vector search will handle similar fact patterns expressed in different words. The index covers opinion text, not case names.
 
 1. Run **the next code cell**.
-2. Check for `pg_textsearch extension is ready.` and up to five case matches under `Top matches`.
+2. Check for `pg_textsearch extension is ready.` and five case matches for `water leaking` under `Top matches`. If no matches print, stop and ask your facilitator for help.
 
     The BM25 score ranks keyword matches. Lower, more negative scores are stronger matches for this query, not confidence percentages.
 
-    This keyword search does not support exact-phrase or typo-tolerant queries.
+    This BM25 search does not support phrase or fuzzy queries.
 
-## 2.12 Build the meaning-based search index
+## 2.12 Build the DiskANN vector index
 
-DiskANN uses approximate matching to speed up searches over large collections of embeddings.
+DiskANN is an approximate nearest neighbor index for vector search. It lets the advisor find similar issues without comparing the question with every stored vector. This lab uses cosine distance to compare the opinion embeddings.
 
 1. Run **the next code cell**.
 2. Wait for `pg_diskann ready: idx_cases_diskann`. This can take a couple of minutes.
 
-## 2.13 View the tables and citation graph
+## 2.13 Visualize the relational schema and citation graph
 
-Use the VS Code PostgreSQL extension for these steps. There is no additional notebook cell.
+Use the VS Code PostgreSQL extension to inspect the database you just built. The schema visualizer shows tables and column types; the graph visualizer shows case nodes and citation edges. There is no additional notebook cell.
 
 ### View the tables
 
@@ -152,7 +156,7 @@ Use the VS Code PostgreSQL extension for these steps. There is no additional not
 ### View the citation graph
 
 1. Right-click `postgres` and select **New Query**.
-2. Copy the query below into the editor. It is also in `C:\Lab392\Code\show_graph.sql`.
+2. Copy the query below into the editor. It is also in `C:\Lab\Code\show_graph.sql`.
 
     ```sql
     SET search_path = public, ag_catalog, "$user";
@@ -164,8 +168,8 @@ Use the VS Code PostgreSQL extension for these steps. There is no additional not
     ```
 
 3. Select the query editor's **Run** play button.
-4. Open the graph view in the results and inspect the cases and their citation links.
+4. Open the graph view in the results. Find two case nodes joined by a `REF` edge: the source case cites the target case.
 
     ![Case citation graph in the PostgreSQL extension](media/notebook-1-citation-graph.png)
 
-Continue to [Part 3 - Build and try the AI assistant](part-3-agentic-app-development.md).
+The HorizonDB knowledge layer is ready. Continue to [Part 3 - Build and try the AI assistant](part-3-agentic-app-development.md) to expose these capabilities as agent tools.

@@ -2,9 +2,11 @@
 
 ## 3.1 Build a Compliance Advisor Agent
 
-You will build a Compliance Advisor Agent for a sample property-flooding dispute in Seattle. An agent is an AI assistant that can call tools to gather evidence before answering.
+Notebook 1 gave the Compliance Advisor Agent its knowledge. Notebook 2 gives it tools to retrieve and use that knowledge.
 
-You will add tools one at a time, then try the assistant in a chat app.
+Cassandra needs evidence she can inspect before making a recommendation. Microsoft Agent Framework lets the Azure OpenAI model call tools, inspect their results, and use the evidence in its response. You will first test the tools directly, then let the agent coordinate them.
+
+The prepared questions use the Seattle property-flooding dispute as a stand-in for a compliance review. Keep that worked example throughout the exercises so you can see how the agent moves from a business question to precedent, supporting evidence, and a reviewable answer.
 
 ![Compliance Advisor Agent architecture](media/notebook-2-architecture.png)
 
@@ -24,11 +26,11 @@ Complete [Part 2](part-2-data-setup.md) first.
 
 Start at the top of the notebook. Use **Run Cell** to run one code cell at a time and wait for it to finish. Skip any text-only cells.
 
-Follow the sections below in order; each run step moves to the next code cell. If a cell reports an error, stop and ask your facilitator for help. If an expected tool call is missing, retry the cell that runs that agent once before asking for help.
+Follow the sections below in order; each run step moves to the next code cell. If a cell reports an error, check its output and the preceding step, then ask your facilitator for help. If an expected tool call is missing, retry that agent cell once before asking for help.
 
 ## 3.1.1 Load the application libraries
 
-The installed libraries connect the model, database tools, and chat app.
+The installed libraries provide Microsoft Agent Framework, Azure OpenAI access, PostgreSQL connections, Mem0 memory, and the Gradio chat interface.
 
 1. Run **the first code cell**.
 2. When asked for an environment, select **Python Environments** > **Python 3.13.9**, not **Python 3.14.7**. To change an existing selection, click the kernel name at the top right.
@@ -41,88 +43,92 @@ This notebook reads the prepared `.env` settings again for its new Python sessio
 1. Run **the next code cell**.
 2. Check that the chat deployment name, embedding deployment name, and API version print.
 
-## 3.2 Add keyword search
+## 3.2 Define the BM25 search tool
 
-Keyword search finds case opinions containing relevant terms, such as "drainage."
+When Cassandra knows a legal term and asks whether there is precedent, BM25 full-text search retrieves opinions containing those terms. In this exercise, the example term is "drainage."
 
 Microsoft Agent Framework uses the `@tool` decorator to make a Python function available to the agent. The tool and parameter descriptions tell the model when to use it and what information to supply.
 
 1. Run **the next code cell** to define `keyword_case_search`.
 2. Check that it finishes without an error. No printed output is expected yet.
 
-## 3.2.1 Test keyword search
+## 3.2.1 Test BM25 search directly
 
-This test calls the tool directly, before the agent uses it.
+This cell calls the Python function directly. It verifies the database query before asking the agent to choose search terms.
 
 1. Run **the next code cell**.
-2. Look for `keyword_case_search was called` and up to five case rows with names, dates, and opinion snippets.
+2. Look for `keyword_case_search was called` and up to five case rows. Pick one result and identify its case ID, name, court, and opinion snippet.
 
     Lower, more negative BM25 scores indicate stronger keyword matches within this query.
 
     Each result contains a short opinion snippet, not the full judgment.
 
-## 3.2.2 Let the agent use keyword search
+## 3.2.2 Give the agent its first tool
 
-The sample question describes a Seattle property flooding after road drainage changes. The agent chooses search terms and drafts an answer from the cases.
+The sample question describes a Seattle property flooding after road drainage changes. Instead of receiving search terms directly, the agent must choose terms from that question, call BM25 search, and use the returned cases in its answer.
 
 This cell creates an agent with keyword search. Later agent cells create it again with the additional tools you have defined.
 
 1. Run **the next code cell**.
 2. Look for `keyword_case_search was called` under `// Functions the Agent Called: //`.
-3. Read `// Agent Response: //`. Find a case from the search results and check how the answer uses it.
+3. Read `// Agent Response: //`. Find a cited case in the tool results and check what evidence it adds to the answer.
 
     The trace confirms tool use, not that the answer is correct.
 
-## 3.3 Add search by meaning
+## 3.3 Define the vector search tool
 
-Meaning-based search can find similar situations even when the question uses different words from the case opinion.
+When an issue is described in business language rather than legal terminology, vector search finds similar fact patterns even when the wording differs. It complements BM25's keyword matching.
 
-Azure OpenAI converts the question into an embedding for comparison with the stored case embeddings. DiskANN applies court and year filters during the search, rather than discarding matches afterward.
+Azure OpenAI embeds the question, and HorizonDB compares it with the stored opinion vectors. DiskANN advanced filtering applies court and year predicates during retrieval, avoiding a separate post-filter that could discard most matches.
 
 1. Run **the next code cell** to define `semantic_case_search`.
 2. Check that it finishes without an error. No printed output is expected yet.
 
-## 3.3.1 Compare the two searches
+## 3.3.1 Compare BM25 and vector search
 
 1. Run **the next code cell**.
 2. Compare `Tool 1 ids` and `Tool 2 ids`. Find any cases returned by only one method.
 
-    In the semantic trace, look for `advanced_filtering=ALWAYS_ON`. The sample searches both courts with a starting year of 1900 to keep the results broad.
+    The calls intentionally use different inputs. BM25 searches legal terms within Washington Supreme Court cases. Vector search uses a natural-language fact pattern across both courts. Differences can come from the retrieval method, query wording, or court scope.
 
-3. Check `Union  ids`, the combined list with duplicates removed.
+3. Check `Union  ids`, the combined candidate list.
 
-    Using both methods is called hybrid search. The semantic results show `distance`, where lower values indicate closer matches. This uses a different scale from BM25 scores.
+    Combining both result sets is hybrid search. Duplicate IDs appear only once. In the vector-search trace, `advanced_filtering=ALWAYS_ON` confirms that the tool enabled DiskANN advanced filtering. The broad sample uses both courts and a starting year of 1900, so those filters narrow little. Vector results show `distance`, where lower values indicate closer matches.
 
-## 3.3.2 Let the agent use both searches
+## 3.3.2 Add hybrid search to the agent
+
+The agent now has two ways to answer the same business question. It can use BM25 when the terminology is known and vector search when the issue is described by its meaning.
 
 1. Run **the next code cell**.
-2. Check that the trace includes both keyword and semantic search.
-3. Compare this with the keyword-only agent's answer. Look for evidence added by the second search.
+2. Check that the trace includes both `keyword_case_search` and `semantic_case_search`.
+3. Compare this with the BM25-only agent's answer. Look for evidence added by vector search, or note if the same cases are used.
 
-## 3.4 Add citation-graph search
+## 3.4 Define the Apache AGE graph tool
 
-The graph tool starts with the combined case IDs from keyword and meaning-based search. It follows up to two citation links in either direction to find related court decisions.
+To understand what supports a conclusion, Cassandra needs relationships as well as similar documents. The graph tool takes the hybrid-search case IDs and follows up to two Apache AGE `REF` edges in either direction to retrieve related precedents.
 
 1. Run **the next code cell** to define `precedent_graph_search`.
 2. Check that it finishes without an error. No printed output is expected yet.
 
-## 3.4.1 Test the three search tools
+## 3.4.1 Test hybrid search with graph expansion
 
 1. Run **the next code cell**.
-2. Find `Input ids:`, the cases from keyword and semantic search.
+2. Find `Input ids:`, the cases from BM25 and vector search.
 3. Find `RELATED_CASE_IDS:`, the additional cases found through citations. The graph returns up to ten.
 
-    These should be new cases, not repeats of the input cases. Washington Supreme Court decisions receive extra ranking weight.
+    Pick a related case that is not in the input list. Graph retrieval adds connected precedents, not another list of semantic matches. Washington Supreme Court decisions receive extra ranking weight.
 
-## 3.4.2 Let the agent use the citation graph
+## 3.4.2 Add graph retrieval to the agent
+
+The agent must now chain its tools: combine the BM25 and vector case IDs, then pass those IDs to the graph tool to retrieve related precedents.
 
 1. Run **the next code cell**.
-2. Check that the trace includes keyword, semantic, and graph search.
+2. Check that the trace includes `keyword_case_search`, `semantic_case_search`, and `precedent_graph_search`.
 3. Find a related case in the answer and compare it with the results from the direct graph test.
 
-## 3.5 Add fact extraction
+## 3.5 Define the in-database AI extraction tool
 
-This tool reads the related cases found by graph search. It asks Azure OpenAI to extract the court's ruling, issues, cited laws, and case outcome through HorizonDB's `azure_ai` extension.
+Retrieved documents are useful only if Cassandra can inspect the facts behind the recommendation. This tool calls `azure_ai.extract` from SQL to extract the court's ruling, issues, cited laws, and case outcome from the graph results.
 
 It uses `lab-chat`, the model alias registered during data setup, and returns named fields that the agent can reuse in its draft.
 
@@ -131,61 +137,68 @@ It uses `lab-chat`, the model alias registered during data setup, and returns na
 
     The lab sends only the first 1,200 characters of each opinion to the model. Important facts may be missing from that excerpt. The text is sent to Azure OpenAI even though the request starts in SQL.
 
-## 3.5.1 Let the agent extract facts
+## 3.5.1 Add extracted facts to the answer
+
+This run extends the chain again. After finding and expanding the cases, the agent asks HorizonDB to extract facts that Cassandra can inspect in the final answer.
 
 1. Run **the next code cell**.
 2. Check that the trace includes the three search tools and `case_analyst_extract was called`.
-3. Compare this with the answer before fact extraction was added. Look for rulings or issues rather than case names alone.
+3. Compare this with the answer before extraction was added. Identify a ruling, issue, statute, or outcome used to support the analysis, rather than a case name alone.
 
     If a result contains `extraction_failed`, that case's analysis failed. An `extracted_case=` completion line alone does not prove success. Ask your facilitator for help before relying on the answer.
 
-## 3.6 Add the weather tool
+## 3.6 Define the external weather tool
 
-The Open-Meteo archive service supplies historical rainfall records when weather matters to the question. For a question unrelated to weather, the agent can skip this tool.
-
-For date ranges longer than 14 days, the tool returns totals for the whole period but only the first and last seven daily records.
+The flooding claim also needs evidence about the event itself. The Open-Meteo tool adds historical precipitation records from an external API to the database research. The agent uses it only when weather is relevant.
 
 1. Run **the next code cell** to define `get_weather_evidence`.
 2. Check that it finishes without an error. No printed output is expected yet.
 
-## 3.6.1 Test the weather service
+## 3.6.1 Test the weather service directly
 
-The sample requests Seattle rainfall for January 10 to January 20, 2023.
+The direct test requests Seattle precipitation for January 10 to January 20, 2023. These fixed inputs check the API; the agent will choose dates from the question in the next exercise.
 
 1. Run **the next code cell**.
 2. Check for `get_weather_evidence was called` and `=== Weather Evidence (pretty) ===`.
-3. In `daily_records`, find the dates and `precipitation_mm` values. Identify the day with the most rainfall.
+3. In `daily_records`, find the dates and `precipitation_mm` values. Identify the day with the most precipitation.
 
     If the result reports `WEATHER_EVIDENCE_ERROR` or no data, ask your facilitator for help before continuing.
 
-## 3.6.2 Let the agent use all five tools
+## 3.6.2 Run the agent with all five tools
 
-This question includes a February 2024 date so the agent can request weather evidence.
+The full-agent question gives only the month, February 2024. The agent must infer an exact weather date range. Treat that range as an assumption to review, not a fact supplied by the user.
 
 1. Run **the next code cell**.
-2. Check that all five tools appear in the trace and that the weather call uses Seattle coordinates and February 2024 dates.
-3. Compare this with the answer before weather evidence was added. Find rainfall evidence and how the answer uses it.
+2. Check that all five tools appear in the trace. Confirm that the weather call uses Seattle coordinates and inspect the inferred start and end dates. They should fall within February 2024.
+3. Compare this with the answer before weather evidence was added. Find a precipitation figure from the weather result and check how the answer uses it alongside the case evidence.
 
-    Rainfall records show weather conditions, not who caused the damage.
+    For date ranges longer than 14 days, the tool returns totals for the whole period but only the first and last seven daily records.
 
-## 3.7 Set up stored memory
+    Precipitation records show weather conditions, not who caused the damage. Cassandra would still need evidence linking the event to the alleged conduct.
 
-The earlier agent runs do not retain the previous conversation. Mem0 saves selected conversation facts in HorizonDB so the assistant can recall them in later turns.
+## 3.7 Add long-term memory with Mem0
 
-Before each turn, Mem0 retrieves relevant stored facts and adds them to the agent's context. After the reply, it uses Azure OpenAI to extract new facts and saves them for later turns.
+The earlier agent runs do not retain the previous conversation. Mem0 adds long-term memory so Cassandra can ask follow-up questions without repeating the business context.
+
+Before each turn, Mem0 retrieves relevant facts from HorizonDB's pgvector store and adds them to the agent's context. After the reply, Azure OpenAI extracts new facts for Mem0 to store. The broader Caldova architecture stores conversations and user context in Azure Cosmos DB. This lab keeps Mem0 in HorizonDB and does not build that integration.
 
 1. Run **the next code cell** once, leaving the code unchanged.
 2. Read the intake response and the retrieved and new memory sections. Retrieved memories may be empty on the first run.
 
 This cell runs only the intake message. You will try the remaining conversation turns in the chat app.
 
-## 3.8 Start the chat app and try memory
+## 3.8 Use the Gradio chat app
+
+The chat app brings the architecture together. The conversation shows the answer, **Tool Trace** shows the tools and inputs used, and **Long-term Memory** shows facts retrieved and stored by Mem0.
 
 1. Run **the next code cell**.
 2. Wait for `Running on local URL: http://127.0.0.1:7860`.
 3. Open a browser from the desktop and go to [http://localhost:7860](http://localhost:7860).
+4. Check that the conversation, **Tool Trace**, and **Long-term Memory** panels load.
 
     ![Chat app with Tool Trace and Long-term Memory panels](media/notebook-2-chat-app.png)
+
+    The screenshot and browser header use an earlier legal-research prototype label. They are the same Compliance Advisor prototype used in this lab. The screenshot's cases, dates, and wording may differ from your run; follow the prompts below.
 
     > [!NOTE]
     > Launching this cell clears the app's demo memories and starts a separate conversation from the notebook's intake example. Keep the app running throughout the exercise.
@@ -194,7 +207,7 @@ This cell runs only the intake message. You will try the remaining conversation 
 
 ### Send four messages
 
-Use the chat text box and **Send** button. Wait for each response and memory update before sending the next message.
+Type the four prompts below into the chat text box and select **Send**. Do not use the example buttons for this exercise; they contain different dates and details that would invalidate the recall check. Wait for each response and memory update before sending the next message.
 
 1. Send the intake message:
 
@@ -230,9 +243,9 @@ Use the chat text box and **Send** button. Wait for each response and memory upd
 
     Refresh the browser page and repeat the recall question. Check that the stored facts still appear in the Memory panel. Leave the app running, because rerunning its launch cell clears those memories.
 
-## 3.9 Observe recovery during a database failover
+## 3.9 Test forced failover and recovery
 
-A failover moves the database's primary role to a standby replica. Leave the chat app running for this exercise.
+Decision support must recover when a database node changes. HorizonDB uses replicas for availability, and forced failover promotes a standby replica to primary. Leave the chat app running to test whether the application reconnects and retrieves its stored memories after that change.
 
 Each database tool opens a new connection per call. Memory lookup retries up to five times, about one second apart, to handle a short connection interruption. Requests during failover can still fail; this exercise checks recovery rather than guaranteeing uninterrupted responses.
 

@@ -1,14 +1,16 @@
 # Optional - Check the database server configuration
 
-Notebook 3 is optional. Use it to inspect a server setting if keyword search fails to load. It reads settings without changing the database.
+Notebook 3 is optional. Use it to inspect a server setting if the BM25 full-text search extension fails to load. It reads settings without changing the database.
 
 ## Open Notebook 3
 
-In VS Code Explorer, expand `Code` in `C:\Lab392` and open `3-diagnostics.ipynb`.
+In VS Code Explorer, expand `Code` in `C:\Lab` and open `3-diagnostics.ipynb`.
 
 Start at the top of the notebook. Run one code cell at a time using **Run Cell** and wait for it to finish. Follow the steps below in order and skip any text-only cells.
 
 ## Step 1 - Load the libraries
+
+The notebook loads the PostgreSQL driver and the prepared configuration helpers needed for the server check.
 
 1. Run **the first code cell**.
 2. When asked for an environment, select **Python Environments** > **Python 3.13.9**, not **Python 3.14.7**. To change an existing selection, click the kernel name at the top right.
@@ -23,7 +25,7 @@ Start at the top of the notebook. Run one code cell at a time using **Run Cell**
 
 ## Step 3 - Inspect the preloaded libraries
 
-Some extensions need the server to load a library when it starts. The `shared_preload_libraries` setting lists those libraries.
+The `pg_textsearch` extension provides BM25 search. Its library must be preloaded when the server starts, and `shared_preload_libraries` lists the libraries configured for startup.
 
 1. Run **the next code cell**.
 2. Find `shared_preload_libraries:` and look for `pg_textsearch` in the list beneath it.

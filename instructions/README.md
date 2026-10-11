@@ -24,27 +24,29 @@
 
 ## Overview
 
-In this lab, you will build a Compliance Advisor Agent that helps an attorney investigate a property-flooding dispute in Seattle. It finds relevant Washington State court cases, extracts facts from their opinions, and combines that research with historical rainfall records to draft an answer.
+Cassandra Dunn, Caldova's compliance manager, needs to know whether an issue has precedent, what evidence supports the conclusion, what the risk is, and whether the business can proceed. This lab builds the evidence-gathering core of a Compliance Advisor Agent: find similar issues, connect related cases, and extract facts for review.
 
-An agent is an AI assistant that can call tools to gather evidence before answering. Microsoft Agent Framework connects the Azure OpenAI chat model to five research tools. You will add those tools one at a time and see how each changes the evidence available to the assistant.
+The prepared notebooks use Washington State court cases and a Seattle property-flooding dispute as the worked example. The domain is different, but the decision pattern is the same: retrieve precedent, gather supporting evidence, and keep a human accountable for the recommendation. Caldova-specific policy analysis, risk assessment, and approval workflows remain outside this lab.
 
-One Azure HorizonDB PostgreSQL database stores the cases, search indexes, citation graph, and conversation memories. Azure OpenAI provides the chat and embedding models, while Open-Meteo supplies weather records. The lab demonstrates how one database can support several kinds of search and agent memory without separate databases for each capability.
+In the wider architecture, Azure Cosmos DB holds conversations and user context, while Azure SQL Database Hyperscale holds regulatory reviews and compliance workflows. This lab builds the HorizonDB reasoning core, not those integrations. Its PostgreSQL database stores the cases, vectors, indexes, citation graph, and Mem0 memories used in the exercises.
+
+Microsoft Agent Framework connects the Azure OpenAI model to five tools. The agent selects tools, supplies their inputs, and uses the returned evidence to draft an answer. Azure OpenAI provides the chat and embedding models, and Open-Meteo supplies external weather evidence.
 
 ## What you will build
 
 | Capability | What it does for the assistant |
 |---|---|
-| Keyword search with BM25 and `pg_textsearch` | Finds opinions containing relevant legal terms. |
-| Meaning-based search with `vector` and DiskANN | Finds similar situations even with different wording, within the selected court and year filters. |
-| Citation-graph search with Apache AGE | Follows links between cases to find related court decisions. |
-| In-database fact extraction with `azure_ai` | Calls Azure OpenAI from SQL to extract rulings, issues, cited laws, and case outcomes. |
-| Weather lookup with Open-Meteo | Adds historical rainfall evidence for the location and dates in the question. |
-| Stored conversation memory with Mem0 | Saves selected facts in HorizonDB so follow-up questions can reuse earlier details. |
+| BM25 full-text search with `pg_textsearch` | Retrieves opinions matching relevant legal terms. |
+| Vector search with pgvector and DiskANN | Finds semantically similar cases, with court and year filters. |
+| Graph queries with Apache AGE | Follows citations to related court decisions. |
+| AI functions with `azure_ai.extract` | Calls Azure OpenAI from SQL to extract rulings, issues, cited laws, and case outcomes. |
+| External evidence with Open-Meteo | Retrieves historical precipitation records for the location and dates in the question. |
+| Long-term memory with Mem0 | Stores selected facts in HorizonDB for later conversation turns. |
 | A Gradio chat app | Shows the conversation, tool calls, and memory updates side by side. |
 
-Combining keyword and meaning-based results is called hybrid search. The citation graph adds related decisions, and fact extraction supplies details for the draft.
+Hybrid search combines BM25 keyword precision with vector-based semantic retrieval. Graph expansion adds related precedents, and AI extraction turns opinion text into facts the agent can use. You will inspect the tool calls, evidence, and final answer.
 
-You will first load the dataset and enable the database capabilities, then build and try the assistant. In the chat app, you will test a multi-turn conversation and check that it recalls facts without repeating the intake questions. You will also trigger a controlled database failover and observe whether the app recovers and retrieves its stored memories.
+Notebook 1 gives the agent its knowledge: relational data, vectors, indexes, and a citation graph. Notebook 2 turns those capabilities into tools and composes them into the agent. You will then test multi-turn memory in the chat app and application recovery during a controlled database failover.
 
 The third notebook is an optional server-configuration check. The two main notebooks contain the prepared code; follow the instructions on these pages and check each result before continuing.
 
