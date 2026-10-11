@@ -24,9 +24,31 @@
 
 ## Overview
 
-You will build Counsel AI, a legal research assistant for a sample property-flooding dispute in Seattle. It searches Washington State court cases in Azure HorizonDB, checks historical rainfall, and remembers facts from the conversation.
+In this lab, you will build Counsel AI, a legal research assistant that helps an attorney investigate a property-flooding dispute in Seattle. It finds relevant Washington State court cases, extracts facts from their opinions, and combines that research with historical rainfall records to draft an answer.
 
-The notebooks contain the prepared code. Follow the steps on these pages, run the indicated cells, and check each result before continuing.
+An agent is an AI assistant that can call tools to gather evidence before answering. Microsoft Agent Framework connects the Azure OpenAI chat model to five research tools. You will add those tools one at a time and see how each changes the evidence available to the assistant.
+
+One Azure HorizonDB PostgreSQL database stores the cases, search indexes, citation graph, and conversation memories. Azure OpenAI provides the chat and embedding models, while Open-Meteo supplies weather records. The lab demonstrates how one database can support several kinds of search and agent memory without separate databases for each capability.
+
+## What you will build
+
+| Capability | What it does for the assistant |
+|---|---|
+| Keyword search with BM25 and `pg_textsearch` | Finds opinions containing relevant legal terms. |
+| Meaning-based search with `vector` and DiskANN | Finds similar situations even with different wording, within the selected court and year filters. |
+| Citation-graph search with Apache AGE | Follows links between cases to find related court decisions. |
+| In-database fact extraction with `azure_ai` | Calls Azure OpenAI from SQL to extract rulings, issues, cited laws, and case outcomes. |
+| Weather lookup with Open-Meteo | Adds historical rainfall evidence for the location and dates in the question. |
+| Stored conversation memory with Mem0 | Saves selected facts in HorizonDB so follow-up questions can reuse earlier details. |
+| A Gradio chat app | Shows the conversation, tool calls, and memory updates side by side. |
+
+Combining keyword and meaning-based results is called hybrid search. The citation graph adds related decisions, and fact extraction supplies details for the draft.
+
+You will first load the dataset and enable the database capabilities, then build and try the assistant. In the chat app, you will test a multi-turn conversation and check that it recalls facts without repeating the intake questions. You will also trigger a controlled database failover and observe whether the app recovers and retrieves its stored memories.
+
+The third notebook is an optional server-configuration check. The two main notebooks contain the prepared code; follow the instructions on these pages and check each result before continuing.
+
+This is a learning application, not legal advice. Its sample data and shortened opinion text can produce incomplete answers, so generated claims still need review against their sources.
 
 ## Next steps
 
