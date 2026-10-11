@@ -18,9 +18,9 @@
     1. [Open VS Code and set up database connection to Azure PostgreSQL](/instructions/part-1-connect-horizondb-to-vscode.md#open-vs-code-and-set-up-database-connection-to-azure-postgresql)
     2. [Create Connection](/instructions/part-1-connect-horizondb-to-vscode.md#create-connection-to-horizondb)
     3. [Explore VS Code Extension for PostgreSQL Dashboard](/instructions/part-1-connect-horizondb-to-vscode.md#explore-vs-code-extension-for-postgresql-dashboard)
-3. [Part 2 - Prepare the data for your AI assistant](part-2-data-setup.md), using `1-data-setup.ipynb`.
-4. [Part 3 - Build and try the AI assistant](part-3-agentic-app-development.md), using `2-app-development.ipynb`.
-5. [Optional - Check the database server configuration](optional-diagnostics.md), using `3-diagnostics.ipynb`.
+3. [Part 2 - Prepare the data for your AI assistant](part-2-data-setup.md)
+4. [Part 3 - Build and try the AI assistant](part-3-agentic-app-development.md)
+5. [Optional - Check the database server configuration](optional-diagnostics.md)
 
 ## Overview
 
