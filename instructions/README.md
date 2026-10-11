@@ -24,7 +24,7 @@
 
 ## Overview
 
-In this lab, you will build Counsel AI, a legal research assistant that helps an attorney investigate a property-flooding dispute in Seattle. It finds relevant Washington State court cases, extracts facts from their opinions, and combines that research with historical rainfall records to draft an answer.
+In this lab, you will build a Compliance Advisor Agent that helps an attorney investigate a property-flooding dispute in Seattle. It finds relevant Washington State court cases, extracts facts from their opinions, and combines that research with historical rainfall records to draft an answer.
 
 An agent is an AI assistant that can call tools to gather evidence before answering. Microsoft Agent Framework connects the Azure OpenAI chat model to five research tools. You will add those tools one at a time and see how each changes the evidence available to the assistant.
 
